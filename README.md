@@ -65,7 +65,20 @@ OpenRGB를 SDK 서버 모드로 실행한 뒤:
 ## 데이터 소스
 
 - `mock` — 랜덤워크 데모 (기본값). 가끔 급락 이벤트가 옵니다. 현실 고증.
-- `toss` — 토스증권 공식 Open API (조회 전용, 연동 예정)
+- `toss` — 토스증권 공식 Open API (조회 전용). 보유 종목의 평가금액·매입금액·당일손익을 읽어 무드로 환산합니다. 해외(USD) 종목은 환율로 원화 환산해 합산.
+
+### 토스증권 연결
+
+토스증권 WTS → 설정 → Open API에서 `client_id` / `client_secret`을 발급받아 `stonkmood.config.json`에 넣습니다.
+
+```json
+{
+  "source": "toss",
+  "toss": { "clientId": "tsck_...", "clientSecret": "tssk_...", "accountNo": "" }
+}
+```
+
+`accountNo`는 비워두면 첫 종합매매 계좌를 자동 사용합니다. **조회 전용 키만 필요하며, 주문 API는 호출하지 않습니다.**
 
 **이 프로젝트는 주문 기능을 영원히 만들지 않습니다.** 무드등이지 트레이딩 봇이 아닙니다.
 

@@ -13,7 +13,7 @@
 ┌─────────────┐     ┌──────────────────┐     ┌──────────────────────┐
 │   Source     │     │       Core        │     │        Sinks          │
 │              │     │                   │     │                       │
-│  toss (예정) │ ──► │  PortfolioSnapshot│ ──► │  terminal (데모)      │
+│  toss (조회) │ ──► │  PortfolioSnapshot│ ──► │  terminal (데모)      │
 │  mock (데모) │     │   → computeSignal │     │  hue (스마트 전구)    │
 │  upbit (?)   │     │   → state.json    │     │  openrgb (키보드 RGB) │
 └─────────────┘     └──────────────────┘     │  statusline (읽기전용)│
@@ -84,17 +84,18 @@ interface Sink {
 
 출력 예: `🪝 -5.21% 물렸다` / `😎 +1.84% 순항 중 │ 🏃 퇴근각`
 
-## 6. 토스증권 소스 연동 계획 (API 키 발급 대기 중)
+## 6. 토스증권 소스 (구현 완료)
 
-- 인증: OAuth 2.0 Client Credentials → `POST https://openapi.tossinvest.com/v1/oauth2/token`
-- 계좌/자산 조회: `Authorization: Bearer {token}` + `X-Tossinvest-Account` 헤더
-- 사용 API: 계좌/보유주식 + 시세(평가금액 계산용)만. **주문 카테고리는 사용하지 않음**
-- 키 발급 전까지 `MockSource`(랜덤워크 + 2% 확률 급락 이벤트)로 전체 파이프라인 개발/데모
+- 인증: OAuth 2.0 Client Credentials → `POST https://openapi.tossinvest.com/oauth2/token` (Basic 인증 + `application/x-www-form-urlencoded`). 토큰은 client당 1개만 유효(재발급 시 이전 토큰 무효화)하므로 만료 직전까지 캐시한다.
+- 계좌 해석: `GET /api/v1/accounts` → 종합매매 계좌의 `accountSeq`. 이후 사용자 컨텍스트 API의 `X-Tossinvest-Account` 헤더로 사용 (캐시).
+- 자산 조회: `GET /api/v1/holdings` → `totalPurchaseAmount`(매입), `marketValue.amount`(평가), `dailyProfitLoss`(당일손익/등락률)를 `PortfolioSnapshot`으로 정규화.
+- 환율: 해외(USD) 종목이 있으면 `GET /api/v1/exchange-rate?baseCurrency=USD&quoteCurrency=KRW`로 원화 환산해 합산. 국내 종목만이면 환율 호출 생략.
+- **주문 카테고리는 사용하지 않음.** `MockSource`(랜덤워크 + 2% 확률 급락 이벤트)는 키 없이 전체 파이프라인을 굴리는 데모용으로 유지.
 
 ## 7. 로드맵
 
 - [x] v0.1 코어 + mock 소스 + terminal/statusline 싱크 (지금)
 - [ ] v0.2 Hue 싱크 실기기 검증 + OpenRGB 싱크 + `doctor` 명령
-- [ ] v0.3 토스증권 공식 Open API 소스 (키 발급 후)
+- [x] v0.3 토스증권 공식 Open API 소스 (토큰 발급 + 계좌/보유/환율 조회)
 - [ ] v0.4 데모 GIF/영상 README + 공개, CONTRIBUTING.md ("당신의 사물을 연결하세요")
 - [ ] 이후: Govee/Tuya, e-ink, Slack 상태, 배경화면 틴트 — 커뮤니티 PR 영역

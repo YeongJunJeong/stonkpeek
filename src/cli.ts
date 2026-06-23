@@ -19,7 +19,7 @@ const HELP = `stonkmood — 계좌를 쳐다보지 말고, 느껴라.
 `;
 
 function buildSource(cfg: Config): Source {
-  return cfg.source === "toss" ? new TossSource(cfg.toss) : new MockSource();
+  return cfg.source === "toss" ? new TossSource(cfg.toss, cfg.market) : new MockSource();
 }
 
 function buildSinks(cfg: Config): Sink[] {
