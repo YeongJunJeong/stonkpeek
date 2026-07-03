@@ -12,7 +12,8 @@
   "sinks": {
     "terminal": { "enabled": true },
     "hue": { "enabled": false, "bridgeIp": "", "apiKey": "", "lightIds": [1] },
-    "openrgb": { "enabled": false, "host": "127.0.0.1", "port": 6742 }
+    "openrgb": { "enabled": false, "host": "127.0.0.1", "port": 6742 },
+    "http": { "enabled": false, "port": 17654 }
   },
   "toss": { "clientId": "", "clientSecret": "", "accountNo": "" }
 }

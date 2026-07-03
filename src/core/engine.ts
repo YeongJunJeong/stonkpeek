@@ -19,7 +19,7 @@ export async function runEngine(
       await sink.init?.();
       live.push(sink);
     } catch (err) {
-      console.error(`[stonkmood] 싱크 '${sink.name}' 초기화 실패 — 건너뜀:`, (err as Error).message);
+      console.error(`[stonkpeek] 싱크 '${sink.name}' 초기화 실패 — 건너뜀:`, (err as Error).message);
     }
   }
 
@@ -31,11 +31,11 @@ export async function runEngine(
       const results = await Promise.allSettled(live.map((s) => s.apply(signal)));
       results.forEach((r, i) => {
         if (r.status === "rejected") {
-          console.error(`[stonkmood] 싱크 '${live[i].name}' 적용 실패:`, r.reason?.message ?? r.reason);
+          console.error(`[stonkpeek] 싱크 '${live[i].name}' 적용 실패:`, r.reason?.message ?? r.reason);
         }
       });
     } catch (err) {
-      console.error(`[stonkmood] 소스 '${source.name}' 조회 실패:`, (err as Error).message);
+      console.error(`[stonkpeek] 소스 '${source.name}' 조회 실패:`, (err as Error).message);
     }
   };
 

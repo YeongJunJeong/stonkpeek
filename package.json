@@ -1,10 +1,10 @@
 {
-  "name": "stonkmood",
+  "name": "stonkpeek",
   "version": "0.1.0",
-  "description": "Ambient portfolio — 계좌를 쳐다보지 말고, 느껴라. Smart bulbs, RGB keyboards, and Claude Code statusline reflecting your stocks.",
+  "description": "Ambient portfolio — 계좌를 쳐다보지 말고, 느껴라. Smart bulbs, RGB keyboards, Claude Code statusline, and a Windows tray hover widget reflecting your stocks.",
   "type": "module",
   "bin": {
-    "stonkmood": "dist/cli.js"
+    "stonkpeek": "dist/cli.js"
   },
   "main": "dist/cli.js",
   "scripts": {

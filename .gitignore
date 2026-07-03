@@ -1,5 +1,5 @@
 node_modules/
 dist/
 *.log
-stonkmood.config.json
+stonkpeek.config.json
 key.txt

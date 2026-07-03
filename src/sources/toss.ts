@@ -1,5 +1,5 @@
 import type { Config } from "../config.js";
-import type { PortfolioSnapshot, Source } from "../core/types.js";
+import type { Holding, PortfolioSnapshot, Source } from "../core/types.js";
 import { isKrxOpen } from "./mock.js";
 
 const BASE = "https://openapi.tossinvest.com";
@@ -10,11 +10,26 @@ interface Price {
   usd?: string | null;
 }
 
+/** 종목 한 건. 금액은 해당 종목 통화(currency) 기준 문자열. */
+interface HoldingItem {
+  symbol: string;
+  name: string;
+  marketCountry: string;
+  currency: string; // "KRW" | "USD"
+  quantity: string;
+  lastPrice: string;
+  averagePurchasePrice: string;
+  marketValue: { purchaseAmount: string; amount: string; amountAfterCost: string };
+  profitLoss: { amount: string; rate: string };
+  dailyProfitLoss: { amount: string; rate: string };
+}
+
 interface HoldingsOverview {
   totalPurchaseAmount: Price; // 투자원금
   marketValue: { amount: Price; amountAfterCost: Price }; // 평가금액
   profitLoss: { amount: Price; rate: string }; // 누적 손익
   dailyProfitLoss: { amount: Price; rate: string }; // 당일 손익
+  items: HoldingItem[]; // 종목별 내역
 }
 
 interface Account {
@@ -64,13 +79,30 @@ export class TossSource implements Source {
     });
 
     // 해외 종목이 있을 때만 환율을 조회해 원화로 환산한다.
-    const usdPresent = [
-      h.totalPurchaseAmount.usd,
-      h.marketValue.amount.usd,
-      h.dailyProfitLoss.amount.usd,
-    ].some((v) => v != null && num(v) !== 0);
+    const usdPresent =
+      [h.totalPurchaseAmount.usd, h.marketValue.amount.usd, h.dailyProfitLoss.amount.usd].some(
+        (v) => v != null && num(v) !== 0,
+      ) || (h.items ?? []).some((it) => it.currency !== "KRW");
     const fx = usdPresent ? await this.getUsdKrw(token) : 0;
     const krw = (p: Price) => num(p.krw) + (p.usd != null ? num(p.usd) * fx : 0);
+
+    // 종목별 내역: 종목 통화가 원화가 아니면 환율로 환산. 등락률(rate)은 통화 무관이라 그대로.
+    const holdings: Holding[] = (h.items ?? []).map((it) => {
+      const k = (v: string) => num(v) * (it.currency === "KRW" ? 1 : fx);
+      return {
+        symbol: it.symbol,
+        name: it.name,
+        country: it.marketCountry,
+        quantity: num(it.quantity),
+        price: k(it.lastPrice),
+        value: k(it.marketValue.amount),
+        cost: k(it.marketValue.purchaseAmount),
+        dayChangePct: num(it.dailyProfitLoss.rate) * 100,
+        totalPnlPct: num(it.profitLoss.rate) * 100,
+        dayPnl: k(it.dailyProfitLoss.amount),
+        pnl: k(it.profitLoss.amount),
+      };
+    });
 
     const now = new Date();
     return {
@@ -79,6 +111,7 @@ export class TossSource implements Source {
       dayChangePct: num(h.dailyProfitLoss.rate) * 100,
       dayPnl: krw(h.dailyProfitLoss.amount),
       marketOpen: this.market === "always" ? true : isKrxOpen(now),
+      holdings,
       at: now,
     };
   }

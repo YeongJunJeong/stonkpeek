@@ -1,4 +1,11 @@
-import type { PortfolioSnapshot, Source } from "../core/types.js";
+import type { Holding, PortfolioSnapshot, Source } from "../core/types.js";
+
+/** 데모용 가짜 종목들. 평가/매입 비중을 다르게 둬서 종목마다 수익률이 다르게 보이도록. */
+const MOCK_DEFS = [
+  { symbol: "005930", name: "삼성전자", country: "KR", valueW: 0.45, costW: 0.4, dayOffset: +0.6 },
+  { symbol: "AAPL", name: "Apple", country: "US", valueW: 0.3, costW: 0.36, dayOffset: -1.1 },
+  { symbol: "035720", name: "카카오", country: "KR", valueW: 0.25, costW: 0.24, dayOffset: +0.4 },
+];
 
 /**
  * 랜덤워크 데모 소스. API 키 없이 전체 파이프라인을 굴려볼 수 있다.
@@ -24,12 +31,35 @@ export class MockSource implements Source {
     this.value *= 1 + step;
 
     const now = new Date();
+    const dayChangePct = (this.value / this.prevClose - 1) * 100;
+
+    const holdings: Holding[] = MOCK_DEFS.map((d) => {
+      const value = this.value * d.valueW;
+      const cost = this.cost * d.costW;
+      const day = dayChangePct + d.dayOffset;
+      const quantity = Math.max(1, Math.round(value / 150_000));
+      return {
+        symbol: d.symbol,
+        name: d.name,
+        country: d.country,
+        quantity,
+        price: value / quantity,
+        value,
+        cost,
+        dayChangePct: day,
+        totalPnlPct: (value / cost - 1) * 100,
+        dayPnl: value - value / (1 + day / 100),
+        pnl: value - cost,
+      };
+    });
+
     return {
       totalValue: this.value,
       totalCost: this.cost,
-      dayChangePct: (this.value / this.prevClose - 1) * 100,
+      dayChangePct,
       dayPnl: this.value - this.prevClose,
       marketOpen: this.opts.alwaysOpen ? true : isKrxOpen(now),
+      holdings,
       at: now,
     };
   }

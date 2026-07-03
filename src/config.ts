@@ -18,6 +18,7 @@ export interface Config {
     terminal: { enabled: boolean };
     hue: { enabled: boolean; bridgeIp: string; apiKey: string; lightIds: number[] };
     openrgb: { enabled: boolean; host: string; port: number };
+    http: { enabled: boolean; port: number };
   };
   toss: { clientId: string; clientSecret: string; accountNo: string };
 }
@@ -32,15 +33,16 @@ export const DEFAULT_CONFIG: Config = {
     terminal: { enabled: true },
     hue: { enabled: false, bridgeIp: "", apiKey: "", lightIds: [1] },
     openrgb: { enabled: false, host: "127.0.0.1", port: 6742 },
+    http: { enabled: false, port: 17654 },
   },
   toss: { clientId: "", clientSecret: "", accountNo: "" },
 };
 
-/** ./stonkmood.config.json → ~/.stonkmood/config.json 순으로 찾고, 없으면 기본값 */
+/** ./stonkpeek.config.json → ~/.stonkpeek/config.json 순으로 찾고, 없으면 기본값 */
 export function loadConfig(): Config {
   const candidates = [
-    join(process.cwd(), "stonkmood.config.json"),
-    join(homedir(), ".stonkmood", "config.json"),
+    join(process.cwd(), "stonkpeek.config.json"),
+    join(homedir(), ".stonkpeek", "config.json"),
   ];
   for (const p of candidates) {
     if (existsSync(p)) {

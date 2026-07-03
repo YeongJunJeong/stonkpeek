@@ -65,6 +65,7 @@ export function computeSignal(snap: PortfolioSnapshot, cfg: Config): Signal {
     emoji,
     message,
     offDuty: isOffDuty(snap, cfg),
+    holdings: snap.holdings,
     at: snap.at.toISOString(),
   };
 }
