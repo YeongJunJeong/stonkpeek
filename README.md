@@ -18,20 +18,11 @@
 
 ## Download and Install
 
-### 1. 다운로드
+[Download](https://github.com/YeongJunJeong/tosspeek/releases/latest) · [Releases](https://github.com/YeongJunJeong/tosspeek/releases)
 
-**[⬇ 최신 릴리스 다운로드](https://github.com/YeongJunJeong/tosspeek/releases/latest)**
+**Requirements:** Windows, [Node.js](https://nodejs.org)
 
-위 링크로 들어가서 **Source code (zip)**을 받은 뒤 압축을 풀어주세요. 그동안 나온 모든 버전은 **[Releases 목록](https://github.com/YeongJunJeong/tosspeek/releases)**에서 볼 수 있습니다.
-
-### 2. 준비물
-
-- **Windows**
-- **[Node.js](https://nodejs.org)** (설치 후 컴퓨터 재시작을 권장합니다) — 없으면 설치부터 해주세요.
-
-### 3. 설치 & 실행
-
-압축을 푼 폴더에서 아래 세 줄을 순서대로 실행합니다 (Windows 터미널/PowerShell):
+압축을 푼 폴더에서:
 
 ```bash
 npm install
@@ -39,13 +30,10 @@ npm run build
 node dist/cli.js install-startup
 ```
 
-실행하면 그 자리에서 바로 트레이 아이콘이 뜹니다. 재부팅할 필요 없습니다 — 이후 컴퓨터를 켤 때도 자동으로 조용히 실행됩니다.
-
-트레이 아이콘이 안 보이면, 작업표시줄 시계 옆의 **숨겨진 아이콘(`^`) 화살표**를 눌러보세요 — Windows가 새 아이콘을 기본적으로 그 안에 넣어둡니다.
-
-처음에는 아직 계좌를 연동하지 않았기 때문에 **가짜(데모) 데이터**가 표시됩니다. 트레이 아이콘을 **우클릭 → 설정**에서 계좌 연동 정보를 입력하고 저장하면 그때부터 실제 데이터로 바뀝니다.
-
-혹시 실수로 트레이를 껐다면, 바탕화면에 생긴 **"TossPeek 실행"** 아이콘을 더블클릭하면 다시 켜집니다.
+- 트레이 아이콘이 바로 뜹니다. 재부팅 필요 없이 다음 로그인부터 자동 실행됩니다.
+- 안 보이면 작업표시줄 숨겨진 아이콘(`^`) 확인.
+- 계좌 연동 전까지는 데모 데이터가 표시됩니다. 우클릭 → 설정에서 연동.
+- 실수로 껐다면 바탕화면 "TossPeek 실행" 아이콘으로 재실행.
 
 ## License
 
