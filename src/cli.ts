@@ -24,7 +24,7 @@ const HELP = `stonkpeek — 계좌를 쳐다보지 말고, 느껴라.
   stonkpeek holdings    보유 종목별 수익률 표 (현재 소스에서 즉시 조회)
   stonkpeek tray        Windows 작업표시줄 트레이 점 + 종목 시세 위젯(마우스 오버) 띄우기
   stonkpeek install-startup    컴퓨터 켤 때(로그인 시) 데몬+트레이 자동 실행 등록
-                               + 바탕화면에 재실행용 아이콘 생성
+                               + 바탕화면에 재실행용 아이콘 생성 + 지금 바로 실행
   stonkpeek uninstall-startup  로그인 자동 실행 등록 해제 (바탕화면 아이콘은 남음)
   stonkpeek help        이 도움말
 `;
@@ -284,6 +284,13 @@ async function main(): Promise<void> {
       console.log(
         `🟢 자동 시작 등록 완료 — 다음 로그인부터 데몬+트레이가 조용히 뜹니다.\n   ${vbsPath}${desktopMsg}\n   해제하려면: stonkpeek uninstall-startup`,
       );
+
+      // 등록만 해두면 다음 로그인 전까진 화면에 아무것도 안 떠서 "설치했는데 안 되네?"로
+      // 오해하기 쉽다. 재부팅을 기다리게 하지 말고 지금 이 자리에서 바로 띄운다 — 둘 다 이미
+      // 떠 있으면 launchDaemonBackground/launchTray가 알아서 건너뛰므로 여러 번 실행해도 안전하다.
+      console.log("\n지금 바로 실행합니다…");
+      launchDaemonBackground();
+      launchTray();
       break;
     }
 
