@@ -18,7 +18,7 @@ export class OpenRgbSink implements Sink {
       throw new Error("openrgb-sdk 패키지가 없습니다. `npm install openrgb-sdk` 후 다시 시도하세요.");
     });
     const Client = sdk.Client ?? sdk.default?.Client;
-    this.client = new Client("stonkpeek", this.cfg.port, this.cfg.host);
+    this.client = new Client("tosspeek", this.cfg.port, this.cfg.host);
     await this.client.connect();
   }
 

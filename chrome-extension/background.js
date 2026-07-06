@@ -1,4 +1,4 @@
-// StonkPeek — 크롬 툴바 확장 (화면형 싱크, 읽기 전용)
+// TossPeek — 크롬 툴바 확장 (화면형 싱크, 읽기 전용)
 //
 // 데몬의 HttpSink(localhost:17654)가 노출하는 최신 Signal을 폴링해
 // 툴바 아이콘을 무드 색 점으로, 배지를 등락률로 칠한다. 옆 사람 눈엔 그냥 확장 아이콘.
@@ -7,7 +7,7 @@
 // 즉시 회색/숨김 토글. 데몬·증권사 키는 이 확장 어디에도 없다.
 
 const ENDPOINT = "http://127.0.0.1:17654/signal";
-const POLL_ALARM = "stonkpeek-poll";
+const POLL_ALARM = "tosspeek-poll";
 const POLL_MINUTES = 0.5; // 30초
 const STALE_MS = 10 * 60 * 1000;
 
@@ -39,7 +39,7 @@ async function toggleStealth() {
 async function refresh() {
   const { stealth } = await chrome.storage.session.get("stealth");
   if (stealth) {
-    return paint({ gray: true, badge: "", title: "StonkPeek — 숨김 (단축키로 복귀)" });
+    return paint({ gray: true, badge: "", title: "TossPeek — 숨김 (단축키로 복귀)" });
   }
   try {
     const res = await fetch(ENDPOINT, { cache: "no-store" });
@@ -59,7 +59,7 @@ async function refresh() {
 }
 
 function offline() {
-  return paint({ gray: true, badge: "", title: "StonkPeek: 데몬 꺼짐 — stonkpeek start" });
+  return paint({ gray: true, badge: "", title: "TossPeek: 데몬 꺼짐 — tosspeek start" });
 }
 
 function pct(v, digits = 2) {
@@ -74,7 +74,7 @@ async function paint({ color, gray, badge, title }) {
   if (chrome.action.setBadgeTextColor) {
     await chrome.action.setBadgeTextColor({ color: "#ffffff" });
   }
-  await chrome.action.setTitle({ title: title || "StonkPeek" });
+  await chrome.action.setTitle({ title: title || "TossPeek" });
 }
 
 // OffscreenCanvas로 무드 색 점을 그려 16/32px ImageData를 만든다 (PNG 파일 불필요).

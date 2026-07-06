@@ -1,4 +1,4 @@
-// StonkPeek 팝업 — 데몬의 localhost 피드에서 최신 Signal을 읽어 보유 종목 리스트를 그린다.
+// TossPeek 팝업 — 데몬의 localhost 피드에서 최신 Signal을 읽어 보유 종목 리스트를 그린다.
 const ENDPOINT = "http://127.0.0.1:17654/signal";
 
 function pct(v, d = 2) { return (v >= 0 ? "+" : "") + Number(v).toFixed(d) + "%"; }
@@ -52,10 +52,10 @@ async function load() {
       listEl.appendChild(li);
     }
   } catch {
-    moodEl.textContent = "StonkPeek";
+    moodEl.textContent = "TossPeek";
     totalEl.textContent = "";
     listEl.innerHTML =
-      '<li class="empty">데몬이 꺼져 있어요.<br>다른 창에서 <b>stonkpeek start</b> 를 실행하세요.</li>';
+      '<li class="empty">데몬이 꺼져 있어요.<br>다른 창에서 <b>tosspeek start</b> 를 실행하세요.</li>';
   }
 }
 

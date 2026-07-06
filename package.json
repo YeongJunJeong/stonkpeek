@@ -1,10 +1,10 @@
 {
-  "name": "stonkpeek",
+  "name": "tosspeek",
   "version": "0.1.0",
   "description": "계좌를 쳐다보지 말고, 느껴라. Windows 작업표시줄에서 내 주식을 살짝 엿보는 도구.",
   "type": "module",
   "bin": {
-    "stonkpeek": "dist/cli.js"
+    "tosspeek": "dist/cli.js"
   },
   "main": "dist/cli.js",
   "scripts": {

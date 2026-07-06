@@ -15,18 +15,18 @@ import { TerminalSink } from "./sinks/terminal.js";
 import { MockSource } from "./sources/mock.js";
 import { TossSource } from "./sources/toss.js";
 
-const HELP = `stonkpeek — 계좌를 쳐다보지 말고, 느껴라.
+const HELP = `tosspeek — 계좌를 쳐다보지 말고, 느껴라.
 
 사용법:
-  stonkpeek demo        목업 데이터로 터미널 데모 (API 키 불필요)
-  stonkpeek start       설정된 소스/싱크로 데몬 실행
-  stonkpeek statusline  Claude Code 상태줄용 한 줄 출력 (state.json 읽기 전용)
-  stonkpeek holdings    보유 종목별 수익률 표 (현재 소스에서 즉시 조회)
-  stonkpeek tray        Windows 작업표시줄 트레이 점 + 종목 시세 위젯(마우스 오버) 띄우기
-  stonkpeek install-startup    컴퓨터 켤 때(로그인 시) 데몬+트레이 자동 실행 등록
+  tosspeek demo        목업 데이터로 터미널 데모 (API 키 불필요)
+  tosspeek start       설정된 소스/싱크로 데몬 실행
+  tosspeek statusline  Claude Code 상태줄용 한 줄 출력 (state.json 읽기 전용)
+  tosspeek holdings    보유 종목별 수익률 표 (현재 소스에서 즉시 조회)
+  tosspeek tray        Windows 작업표시줄 트레이 점 + 종목 시세 위젯(마우스 오버) 띄우기
+  tosspeek install-startup    컴퓨터 켤 때(로그인 시) 데몬+트레이 자동 실행 등록
                                + 바탕화면에 재실행용 아이콘 생성 + 지금 바로 실행
-  stonkpeek uninstall-startup  로그인 자동 실행 등록 해제 (바탕화면 아이콘은 남음)
-  stonkpeek help        이 도움말
+  tosspeek uninstall-startup  로그인 자동 실행 등록 해제 (바탕화면 아이콘은 남음)
+  tosspeek help        이 도움말
 `;
 
 /** cli.ts(tsx로 직접 실행) / dist/cli.js(빌드본) 어느 쪽이든 동일하게 통하는 이 파일 자신의 절대 경로. */
@@ -90,7 +90,7 @@ function isProcessRunning(nameFilter: string, cmdlineSubstrings: string[]): bool
   }
 }
 
-/** 데몬(`stonkpeek start`)을 창 없는 백그라운드 프로세스로 띄운다. state.json이 갱신되기 시작한다. */
+/** 데몬(`tosspeek start`)을 창 없는 백그라운드 프로세스로 띄운다. state.json이 갱신되기 시작한다. */
 function launchDaemonBackground(): void {
   if (isProcessRunning("node.exe", [selfPath(), "start"])) {
     console.log("💤 데몬이 이미 실행 중입니다 — 새로 안 띄웁니다.");
@@ -105,8 +105,8 @@ function startupFolder(): string {
   return join(appData, "Microsoft", "Windows", "Start Menu", "Programs", "Startup");
 }
 
-const STARTUP_VBS_NAME = "stonkpeek-autostart.vbs";
-const DESKTOP_SHORTCUT_NAME = "StonkPeek 실행.vbs";
+const STARTUP_VBS_NAME = "tosspeek-autostart.vbs";
+const DESKTOP_SHORTCUT_NAME = "TossPeek 실행.vbs";
 
 /**
  * node.exe를 완전히 숨김창(0)으로 띄우는 전통적인 방법 — .lnk/.cmd는 콘솔 창이 잠깐
@@ -128,7 +128,7 @@ function launchTray(): void {
     process.exit(1);
   }
   // src/cli.ts(tsx)와 dist/cli.js(빌드) 모두 프로젝트 루트 한 단계 아래 → ../tray 로 동일.
-  const script = join(dirname(fileURLToPath(import.meta.url)), "..", "tray", "stonkpeek-tray.ps1");
+  const script = join(dirname(fileURLToPath(import.meta.url)), "..", "tray", "tosspeek-tray.ps1");
   if (isProcessRunning("powershell.exe", [script])) {
     console.log("💤 트레이가 이미 실행 중입니다 — 새로 안 띄웁니다.");
     return;
@@ -140,7 +140,7 @@ function launchTray(): void {
   spawnDetachedViaStart("powershell.exe", args);
   console.log(
     "🟢 트레이 아이콘을 띄웠습니다. 시계 옆 트레이(▲)를 확인하세요." +
-      "\n   색이 갱신되려면 데몬이 돌아야 합니다 — 다른 창에서 stonkpeek start (또는 demo).",
+      "\n   색이 갱신되려면 데몬이 돌아야 합니다 — 다른 창에서 tosspeek start (또는 demo).",
   );
 }
 
@@ -173,7 +173,7 @@ async function main(): Promise<void> {
   switch (cmd) {
     case "demo": {
       const cfg = loadConfig();
-      console.log("📈 stonkpeek demo — 목업 포트폴리오로 무드를 시연합니다. Ctrl+C로 종료.\n");
+      console.log("📈 tosspeek demo — 목업 포트폴리오로 무드를 시연합니다. Ctrl+C로 종료.\n");
       await daemon(
         { ...cfg, pollIntervalSec: 1 },
         new MockSource({ alwaysOpen: true, volatility: 0.004 }),
@@ -186,11 +186,11 @@ async function main(): Promise<void> {
       const cfg = loadConfig();
       const sinks = buildSinks(cfg);
       if (sinks.length === 0) {
-        console.error("활성화된 싱크가 없습니다. stonkpeek.config.json의 sinks를 확인하세요.");
+        console.error("활성화된 싱크가 없습니다. tosspeek.config.json의 sinks를 확인하세요.");
         process.exit(1);
       }
       console.log(
-        `📈 stonkpeek start — source: ${cfg.source}, sinks: ${sinks.map((s) => s.name).join(", ")}`,
+        `📈 tosspeek start — source: ${cfg.source}, sinks: ${sinks.map((s) => s.name).join(", ")}`,
       );
       await daemon(cfg, buildSource(cfg), sinks);
       break;
@@ -200,7 +200,7 @@ async function main(): Promise<void> {
       const sig = readState();
       const stale = !sig || Date.now() - Date.parse(sig.at) > 10 * 60_000;
       if (!sig || stale) {
-        console.log("💤 stonkpeek: 데몬 꺼짐");
+        console.log("💤 tosspeek: 데몬 꺼짐");
         break;
       }
       const pct = `${sig.dayChangePct >= 0 ? "+" : ""}${sig.dayChangePct.toFixed(2)}%`;
@@ -259,7 +259,7 @@ async function main(): Promise<void> {
       }
       if (selfPath().endsWith(".ts")) {
         console.error(
-          "빌드된 dist/cli.js(또는 전역 설치된 stonkpeek)에서 실행해야 합니다.\n" +
+          "빌드된 dist/cli.js(또는 전역 설치된 tosspeek)에서 실행해야 합니다.\n" +
             "먼저 `npm run build` 후 `node dist/cli.js install-startup`을 실행하세요.",
         );
         process.exit(1);
@@ -282,7 +282,7 @@ async function main(): Promise<void> {
       }
 
       console.log(
-        `🟢 자동 시작 등록 완료 — 다음 로그인부터 데몬+트레이가 조용히 뜹니다.\n   ${vbsPath}${desktopMsg}\n   해제하려면: stonkpeek uninstall-startup`,
+        `🟢 자동 시작 등록 완료 — 다음 로그인부터 데몬+트레이가 조용히 뜹니다.\n   ${vbsPath}${desktopMsg}\n   해제하려면: tosspeek uninstall-startup`,
       );
 
       // 등록만 해두면 다음 로그인 전까진 화면에 아무것도 안 떠서 "설치했는데 안 되네?"로
@@ -312,6 +312,6 @@ async function main(): Promise<void> {
 }
 
 main().catch((err) => {
-  console.error("[stonkpeek]", err instanceof Error ? err.message : err);
+  console.error("[tosspeek]", err instanceof Error ? err.message : err);
   process.exit(1);
 });

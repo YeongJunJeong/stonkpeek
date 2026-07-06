@@ -1,6 +1,6 @@
 {
   "manifest_version": 3,
-  "name": "StonkPeek",
+  "name": "TossPeek",
   "version": "0.1.0",
   "description": "계좌를 쳐다보지 말고, 느껴라. 툴바 구석에서 무드만 슬쩍 — 직장인용 스텔스 포트폴리오.",
   "permissions": ["alarms", "storage"],
@@ -12,7 +12,7 @@
     "service_worker": "background.js"
   },
   "action": {
-    "default_title": "StonkPeek",
+    "default_title": "TossPeek",
     "default_popup": "popup.html"
   },
   "commands": {

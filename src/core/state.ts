@@ -3,7 +3,7 @@ import { homedir } from "node:os";
 import { join } from "node:path";
 import type { Signal } from "./types.js";
 
-const STATE_DIR = join(homedir(), ".stonkpeek");
+const STATE_DIR = join(homedir(), ".tosspeek");
 const STATE_FILE = join(STATE_DIR, "state.json");
 
 /** 데몬이 매 틱 기록. statusline 등 읽기 전용 소비자가 API 호출 없이 가져다 쓴다. */
