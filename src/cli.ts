@@ -15,7 +15,7 @@ import { TerminalSink } from "./sinks/terminal.js";
 import { MockSource } from "./sources/mock.js";
 import { TossSource } from "./sources/toss.js";
 
-const HELP = `tosspeek — 계좌를 쳐다보지 말고, 느껴라.
+const HELP = `tosspeek — 토스증권 오픈 API로 내 주식을 작업표시줄에서 확인하는 도구.
 
 사용법:
   tosspeek demo        목업 데이터로 터미널 데모 (API 키 불필요)
@@ -87,9 +87,11 @@ function isProcessRunning(nameFilter: string, cmdlineSubstrings: string[]): bool
     const psCmd =
       `(Get-CimInstance Win32_Process -Filter "Name='${nameFilter}'" | ` +
       `Where-Object { ${clauses} } | Measure-Object).Count`;
+    // 콜드 스타트(로그인 직후 등)에선 powershell 기동+WMI 조회가 5초를 훌쩍 넘겨
+    // 타임아웃 → catch → "안 떠 있다" 오판 → 중복 실행으로 이어진 적이 있다. 넉넉히 잡는다.
     const out = execFileSync("powershell.exe", ["-NoProfile", "-Command", psCmd], {
       encoding: "utf8",
-      timeout: 5000,
+      timeout: 15_000,
     }).trim();
     return parseInt(out, 10) > 0;
   } catch {
@@ -113,7 +115,10 @@ function startupFolder(): string {
 }
 
 const STARTUP_VBS_NAME = "tosspeek-autostart.vbs";
-const DESKTOP_SHORTCUT_NAME = "TossPeek 실행.vbs";
+const DESKTOP_SHORTCUT_NAME = "TossPeek.lnk";
+// 예전 버전이 만들던 바탕화면 .vbs — .lnk로 교체하면서 발견 시 지워준다.
+const LEGACY_DESKTOP_SHORTCUT = "TossPeek 실행.vbs";
+const LAUNCH_VBS_NAME = "tosspeek-launch.vbs";
 
 /**
  * node.exe를 완전히 숨김창(0)으로 띄우는 전통적인 방법 — .lnk/.cmd는 콘솔 창이 잠깐
@@ -126,6 +131,35 @@ function autostartVbsContent(): string {
     'Set WshShell = CreateObject("WScript.Shell")',
     `WshShell.Run """${process.execPath}"" ""${selfPath()}"" autostart", 0, False`,
   ].join("\r\n");
+}
+
+/**
+ * 바탕화면에 "TossPeek" 아이콘(.lnk)을 만든다 — wscript로 런처 vbs를 숨김 실행하므로
+ * 더블클릭해도 콘솔 창이 안 뜬다. 아이콘은 assets/tosspeek.ico. 런처 vbs는 프로젝트
+ * 루트에 두어(Startup 폴더가 아니라) uninstall-startup 후에도 바로가기가 계속 동작한다.
+ */
+function createDesktopShortcut(): string {
+  const root = join(dirname(selfPath()), "..");
+  const vbsPath = join(root, LAUNCH_VBS_NAME);
+  writeFileSync(vbsPath, autostartVbsContent());
+
+  const icoPath = join(root, "assets", "tosspeek.ico");
+  const lnkPath = join(homedir(), "Desktop", DESKTOP_SHORTCUT_NAME);
+  const q = (s: string) => `'${s.replace(/'/g, "''")}'`;
+  const ps =
+    `$s=(New-Object -ComObject WScript.Shell).CreateShortcut(${q(lnkPath)});` +
+    `$s.TargetPath='wscript.exe';` +
+    `$s.Arguments=${q(`"${vbsPath}"`)};` +
+    `$s.WorkingDirectory=${q(root)};` +
+    (existsSync(icoPath) ? `$s.IconLocation=${q(`${icoPath},0`)};` : "") +
+    `$s.Save()`;
+  execFileSync("powershell.exe", ["-NoProfile", "-Command", ps], { timeout: 10_000 });
+
+  // 예전 버전이 만든 .vbs 바탕화면 아이콘이 남아 있으면 정리 (없으면 조용히 통과).
+  try {
+    unlinkSync(join(homedir(), "Desktop", LEGACY_DESKTOP_SHORTCUT));
+  } catch {}
+  return lnkPath;
 }
 
 /** Windows 트레이 아이콘(.NET NotifyIcon)을 별도 프로세스로 분리 실행한다. */
@@ -276,14 +310,13 @@ async function main(): Promise<void> {
       const vbsPath = join(folder, STARTUP_VBS_NAME);
       writeFileSync(vbsPath, autostartVbsContent());
 
-      // 바탕화면에도 같은 걸 하나 더 — 실수로 트레이를 "종료"했을 때(데몬은 안 죽지만 트레이는
-      // 죽는다) 터미널 없이 더블클릭 한 번으로 재실행할 수 있게. autostart는 이미 떠 있는 건
-      // 건너뛰므로 중복 실행 걱정 없이 몇 번을 눌러도 안전하다.
+      // 바탕화면에도 실행 아이콘 하나 더 — 실수로 트레이를 "종료"했을 때(데몬은 안 죽지만
+      // 트레이는 죽는다) 터미널 없이 더블클릭 한 번으로 재실행할 수 있게. autostart는 이미
+      // 떠 있는 건 건너뛰므로 중복 실행 걱정 없이 몇 번을 눌러도 안전하다.
       let desktopMsg = "";
       try {
-        const desktopPath = join(homedir(), "Desktop", DESKTOP_SHORTCUT_NAME);
-        writeFileSync(desktopPath, autostartVbsContent());
-        desktopMsg = `\n🟢 바탕화면에 "${DESKTOP_SHORTCUT_NAME}" 아이콘도 만들었습니다 — 실수로 껐을 때 더블클릭으로 재실행하세요.`;
+        createDesktopShortcut();
+        desktopMsg = `\n🟢 바탕화면에 "TossPeek" 아이콘도 만들었습니다 — 실수로 껐을 때 더블클릭으로 재실행하세요.`;
       } catch {
         // Desktop 폴더가 없는 특이 환경 등 — 로그인 자동 실행 자체는 이미 등록됐으니 무시.
       }

@@ -1,7 +1,7 @@
 ﻿<#
   TossPeek — Windows 트레이 아이콘 + 종목별 자동 회전 위젯 (화면형 싱크)
 
-  계좌를 쳐다보지 말고, 느껴라. 시계 옆 점 하나가 등락 색으로 바뀐다.
+  시계 옆 점 하나가 등락 색으로 바뀐다.
   그 점에 마우스를 0.5초 올리고 있으면 작업표시줄 코너에 보유 종목이
   하나씩 자동으로 돌아가며 종목명/현재가/당일·누적 수익률/손익이 뜬다
   (날씨 위젯처럼) — 커서를 치우면 사라진다. 숫자만 보여주는 단순한
@@ -16,12 +16,20 @@
 #>
 param(
   [int]$IntervalSec = 5,
-  # 보스키: Ctrl+Alt+<BossKey> 전역 단축키로 즉시 회색(사장님 모드) 토글. 한 글자.
+  # 숨김 단축키: Ctrl+Alt+<BossKey> 전역 단축키로 즉시 회색(숨김 모드) 토글. 한 글자.
   [string]$BossKey = "H",
   [string]$StatePath = (Join-Path $env:USERPROFILE ".tosspeek\state.json")
 )
 
 $ErrorActionPreference = "Stop"
+
+# 단일 인스턴스 가드 — cli.ts의 커맨드라인 검사(isProcessRunning)는 시스템이 느릴 때
+# 타임아웃으로 오판해 중복 실행될 수 있다(실제로 재현됨). OS 수준 named mutex는 그런
+# 레이스가 없다: 두 번째 인스턴스는 여기서 조용히 종료된다. $script:TrayMutex에 잡아둬
+# 프로세스가 사는 동안 GC로 해제되지 않게 한다.
+$script:TrayMutex = New-Object System.Threading.Mutex($false, "Local\TossPeekTray")
+if (-not $script:TrayMutex.WaitOne(0)) { exit 0 }
+
 Add-Type -AssemblyName System.Windows.Forms
 Add-Type -AssemblyName System.Drawing
 
@@ -178,10 +186,10 @@ function Update-Tray {
   # NotifyIcon.Text는 일부러 안 씀 — OS 기본 툴팁이 hover 위젯과 겹쳐 보이는 걸 막기 위함.
   # 대신 우클릭 메뉴 맨 위($titleItem)에 같은 정보를 담는다.
 
-  # 보스키(사장님 모드): 신호 무관하게 무채색 점. 폴링은 계속 돈다.
+  # 숨김 모드: 신호 무관하게 무채색 점. 폴링은 계속 돈다.
   if ($script:Boss) {
     Set-TrayIcon 128 128 128 110
-    $titleItem.Text = "TossPeek — 사장님 모드 (단축키로 복귀)"
+    $titleItem.Text = "TossPeek — 숨김 모드 (단축키로 복귀)"
     return
   }
 
@@ -449,7 +457,7 @@ function Set-WidgetPlaceholder([string]$title, [string]$sub) {
 function Set-WidgetContent {
   if (-not $widget) { return }
 
-  if ($script:Boss) { Set-WidgetPlaceholder "TossPeek" "사장님 모드"; return }
+  if ($script:Boss) { Set-WidgetPlaceholder "TossPeek" "숨김 모드"; return }
   if ($script:WidgetStale -or $script:WidgetFrames.Count -eq 0) {
     Set-WidgetPlaceholder "TossPeek" "데몬 꺼짐 — tosspeek start"; return
   }
@@ -525,7 +533,7 @@ function Hide-Widget {
 function Show-Holdings {
   $sig = Read-Signal
   $form = New-Object System.Windows.Forms.Form
-  $form.Size = New-Object System.Drawing.Size(470, 340)
+  $form.Size = New-Object System.Drawing.Size(700, 340)
   $form.StartPosition = "CenterScreen"
   $form.TopMost = $true
   $form.BackColor = [System.Drawing.Color]::FromArgb(28, 28, 30)
@@ -536,11 +544,13 @@ function Show-Holdings {
   $lv.Dock = "Fill"
   $lv.BackColor = [System.Drawing.Color]::FromArgb(28, 28, 30)
   $lv.ForeColor = [System.Drawing.Color]::FromArgb(232, 232, 234)
-  [void]$lv.Columns.Add("종목", 160)
-  $c1 = $lv.Columns.Add("수량", 80);     $c1.TextAlign = "Right"
-  $c2 = $lv.Columns.Add("평가금액", 120); $c2.TextAlign = "Right"
-  $c3 = $lv.Columns.Add("당일", 70);     $c3.TextAlign = "Right"
-  $c4 = $lv.Columns.Add("누적", 70);     $c4.TextAlign = "Right"
+  [void]$lv.Columns.Add("종목", 150)
+  $c1 = $lv.Columns.Add("수량", 60);      $c1.TextAlign = "Right"
+  $c2 = $lv.Columns.Add("원금", 110);     $c2.TextAlign = "Right"
+  $c3 = $lv.Columns.Add("평가금액", 110); $c3.TextAlign = "Right"
+  $c4 = $lv.Columns.Add("손익", 110);     $c4.TextAlign = "Right"
+  $c5 = $lv.Columns.Add("당일", 65);      $c5.TextAlign = "Right"
+  $c6 = $lv.Columns.Add("누적", 65);      $c6.TextAlign = "Right"
 
   $rows = @($sig.holdings)
   if ($sig -and $rows.Count -gt 0) {
@@ -549,7 +559,9 @@ function Show-Holdings {
       $qStr = if ($q -ge 1) { "{0:N0}" -f $q } else { ("{0:N4}" -f $q).TrimEnd('0').TrimEnd('.') }
       $item = New-Object System.Windows.Forms.ListViewItem([string]$h.name)
       [void]$item.SubItems.Add($qStr)
+      [void]$item.SubItems.Add("{0:N0}원" -f [double]$h.cost)
       [void]$item.SubItems.Add("{0:N0}원" -f [double]$h.value)
+      [void]$item.SubItems.Add("{0:+#,##0;-#,##0;0}원" -f [double]$h.pnl)
       [void]$item.SubItems.Add("{0:+0.00;-0.00}%" -f [double]$h.dayChangePct)
       [void]$item.SubItems.Add("{0:+0.00;-0.00}%" -f [double]$h.totalPnlPct)
       $d = [double]$h.dayChangePct
@@ -635,6 +647,31 @@ function Restart-Daemon {
 
 function Test-AutostartInstalled {
   Test-Path (Join-Path $env:APPDATA "Microsoft\Windows\Start Menu\Programs\Startup\tosspeek-autostart.vbs")
+}
+
+# 바탕화면에 "TossPeek" 아이콘(.lnk) 생성 — cli.ts의 createDesktopShortcut과 동일한 결과물.
+# wscript로 런처 vbs를 숨김 실행하므로 더블클릭해도 콘솔 창이 안 뜬다.
+function New-DesktopShortcut {
+  $root = Get-ProjectRoot
+  $vbs = Join-Path $root "tosspeek-launch.vbs"
+  if (-not (Test-Path $vbs)) {
+    # install-startup을 안 거친 경우(트레이만 직접 띄운 경우) 런처 vbs를 여기서 만든다.
+    $content = 'Set WshShell = CreateObject("WScript.Shell")' + "`r`n" +
+      ('WshShell.Run """{0}"" ""{1}"" autostart", 0, False' -f (Get-NodeExe), (Get-DistCli))
+    [System.IO.File]::WriteAllText($vbs, $content, (New-Object System.Text.UTF8Encoding($false)))
+  }
+  $lnk = Join-Path ([Environment]::GetFolderPath('Desktop')) 'TossPeek.lnk'
+  $ico = Join-Path $root 'assets\tosspeek.ico'
+  $ws = New-Object -ComObject WScript.Shell
+  $sc = $ws.CreateShortcut($lnk)
+  $sc.TargetPath = 'wscript.exe'
+  $sc.Arguments = '"' + $vbs + '"'
+  $sc.WorkingDirectory = $root
+  if (Test-Path $ico) { $sc.IconLocation = "$ico,0" }
+  $sc.Save()
+  [System.Windows.Forms.MessageBox]::Show(
+    "바탕화면에 'TossPeek' 아이콘을 만들었습니다.`n실수로 껐을 때 더블클릭하면 다시 실행됩니다.",
+    "TossPeek") | Out-Null
 }
 
 # install-startup/uninstall-startup은 cli.ts에 이미 있는 로직 — 여기서 중복 구현하지 않고
@@ -729,19 +766,18 @@ function Show-Settings {
   $y += 34
 
   $btnSave = New-Object System.Windows.Forms.Button
-  $btnSave.Text = "저장"; $btnSave.Location = New-Object System.Drawing.Point(95, $y); $btnSave.Size = New-Object System.Drawing.Size(80, 30)
-  $btnSaveRestart = New-Object System.Windows.Forms.Button
-  $btnSaveRestart.Text = "저장 후 재시작"; $btnSaveRestart.Location = New-Object System.Drawing.Point(180, $y); $btnSaveRestart.Size = New-Object System.Drawing.Size(110, 30)
+  $btnSave.Text = "저장"; $btnSave.Location = New-Object System.Drawing.Point(200, $y); $btnSave.Size = New-Object System.Drawing.Size(85, 30)
   $btnCancel = New-Object System.Windows.Forms.Button
   $btnCancel.Text = "취소"; $btnCancel.Location = New-Object System.Drawing.Point(295, $y); $btnCancel.Size = New-Object System.Drawing.Size(75, 30)
-  foreach ($b in @($btnSave, $btnSaveRestart, $btnCancel)) {
+  foreach ($b in @($btnSave, $btnCancel)) {
     $b.BackColor = [System.Drawing.Color]::FromArgb(55, 55, 60)
     $b.ForeColor = [System.Drawing.Color]::White
     $b.FlatStyle = "Flat"
     $f.Controls.Add($b)
   }
 
-  $doSave = {
+  # 저장 = 즉시 적용 — 데몬은 시작할 때만 설정을 읽으므로, 저장 후 조용히 재시작해 준다.
+  $btnSave.add_Click({
     $edits = @{
       source = if ($rbToss.Checked) { "toss" } else { "mock" }
       colorScheme = if ($cmbScheme.SelectedIndex -eq 1) { "us" } else { "kr" }
@@ -749,9 +785,9 @@ function Show-Settings {
       toss = @{ clientId = $tbClientId.Text.Trim(); clientSecret = $tbSecret.Text.Trim(); accountNo = $tbAccount.Text.Trim() }
     }
     Save-ConfigJson $cfg $edits | Out-Null
-  }
-  $btnSave.add_Click({ & $doSave; $f.Close() })
-  $btnSaveRestart.add_Click({ & $doSave; Restart-Daemon; $f.Close() })
+    Restart-Daemon
+    $f.Close()
+  })
   $btnCancel.add_Click({ $f.Close() })
 
   $f.ShowDialog() | Out-Null
@@ -801,9 +837,13 @@ $autostartItem.add_Click({
 }) | Out-Null
 $menu.Items.Add($autostartItem) | Out-Null
 
+$desktopItem = New-Object System.Windows.Forms.ToolStripMenuItem("바탕화면 아이콘 추가")
+$desktopItem.add_Click({ New-DesktopShortcut }) | Out-Null
+$menu.Items.Add($desktopItem) | Out-Null
+
 # 보스키 폴백 (단축키가 다른 앱과 충돌할 때를 대비한 수동 토글).
 $bossItem = New-Object System.Windows.Forms.ToolStripMenuItem(
-  ("사장님 모드  (Ctrl+Alt+{0})" -f $BossKey.ToUpper()))
+  ("숨김 모드  (Ctrl+Alt+{0})" -f $BossKey.ToUpper()))
 $bossItem.add_Click({ Toggle-Boss }) | Out-Null
 $menu.Items.Add($bossItem) | Out-Null
 

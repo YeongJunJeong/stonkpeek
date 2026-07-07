@@ -3,3 +3,5 @@ dist/
 *.log
 tosspeek.config.json
 key.txt
+TossPeek.zip
+tosspeek-launch.vbs

@@ -1,7 +1,7 @@
 {
   "name": "tosspeek",
-  "version": "0.1.0",
-  "description": "계좌를 쳐다보지 말고, 느껴라. Windows 작업표시줄에서 내 주식을 살짝 엿보는 도구.",
+  "version": "0.2.0",
+  "description": "토스증권 오픈 API로 내 주식 계좌를 Windows 작업표시줄에서 확인하는 트레이 도구. Toss Securities Open API stock portfolio tray widget for Windows.",
   "type": "module",
   "bin": {
     "tosspeek": "dist/cli.js"
@@ -14,9 +14,16 @@
     "start": "tsx src/cli.ts start"
   },
   "keywords": [
+    "toss",
+    "toss-securities",
+    "토스증권",
+    "toss-invest",
+    "open-api",
     "portfolio",
     "stock",
-    "tray"
+    "tray",
+    "windows",
+    "system-tray"
   ],
   "license": "UNLICENSED",
   "optionalDependencies": {
